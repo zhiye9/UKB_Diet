@@ -1,0 +1,38 @@
+packageurl<-"https://cran.r-project.org/src/contrib/Archive/nloptr/nloptr_1.2.1.tar.gz"
+
+install.packages(packageurl, repos=NULL, type="source")
+install.packages("lme4",
+                 repos=c("http://lme4.r-forge.r-project.org/repos",
+                         getOption("repos")[["CRAN"]]))
+library(lme4)
+
+X <- read.csv('XXX.csv')
+y <- read.csv('yyyy.csv')
+h <- read.csv('liking_high.csv')
+fit2 = glmer(data = X, liking ~ items_calorie + (items_calorie | items) + (items_calorie | subjects))
+summary(fit2)  
+
+slope = coef(fit2)$subjects
+value = y$energy - slope$items_calorie
+
+plot(value, y$energy)
+plot(value, h$liking_high)
+coef(fit2)$items
+
+options(scipen=200)
+
+write.csv(slope$items_calorie, 'slope.csv')
+
+slope_z = read.csv('slope_zscore.csv')$slope_z
+
+slope_s = scale(slope$items_calorie)
+
+value1 = y$energy - slope_z
+
+cor(value1, y$energy)
+plot(value1, y$energy)
+plot(value1, h$liking_high)
+
+value_raw = read.csv('value_raw.csv')
+cor(value1, value_raw$value_raw)
+
