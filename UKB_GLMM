@@ -4,7 +4,27 @@ install.packages(packageurl, repos=NULL, type="source")
 install.packages("lme4",
                  repos=c("http://lme4.r-forge.r-project.org/repos",
                          getOption("repos")[["CRAN"]]))
+
+install.packages('Hmisc')
+install.packages('optimx')
+install.packages('kableExtra')
+install.packages('sjPlot')
+install.packages('sjmisc')
+install.packages('sjlabelled')
+install.packages("flextable")
 library(lme4)
+library(optimx)
+library(Hmisc)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(readr)
+library(tidyr)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(broom)
+library(flextable)
 
 X <- read.csv('XXX.csv')
 y <- read.csv('yyyy.csv')
@@ -36,3 +56,466 @@ plot(value1, h$liking_high)
 value_raw = read.csv('value_raw.csv')
 cor(value1, value_raw$value_raw)
 
+################################################################################################################
+
+X <- read.csv('demo1000_full_July9.csv')
+X <- read.csv('demo1000_full_July9_binary.csv')
+X <- read.csv('demo_all_H1.csv')
+item_high = X[X$items > 13,]
+item_low = X[X$items <= 13,]
+#temp <- read.csv('demo1000_full.csv')
+#energy = scale(subset(X, !duplicated(subjects))$energy)
+pheno = subset(X, !duplicated(subjects))
+
+fit1_high = glmer(data = item_high, liking ~ items_calorie + (items_calorie | items) + (items_calorie | subjects), family = poisson (link = "log"), nAGQ = 0,
+                  control = glmerControl(optimizer = 'Nelder_Mead'))
+fit1_high = glmer(data = item_high, liking ~ items_calorie + (items_calorie | subjects), family = poisson (link = "log"), nAGQ = 0,
+                  control = glmerControl(optimizer = 'Nelder_Mead'))
+#slope1 = scale((coef(fit1)$subjects)$items_calorie)
+coef1_high = coef(fit1_high)$subjects
+coef1_high['subjects'] = row.names(coef1_high)
+pheno_coef1_high = merge(coef1_high, pheno, by = 'subjects')
+pheno_coef1_high$value1_high = scale(scale(pheno_coef1_high$energy)  - scale(pheno_coef1_high$items_calorie.x))
+
+#fit1_low = glmer(data = item_low, liking ~ items_calorie + (items_calorie | items) + (items_calorie | subjects), family = poisson (link = "log"), nAGQ = 0, 
+#                 control = glmerControl(optimizer = 'Nelder_Mead'))
+fit1_low = glmer(data = item_low, liking ~ items_calorie + (items_calorie | subjects), family = poisson (link = "log"), nAGQ = 0, 
+                 control = glmerControl(optimizer = 'Nelder_Mead'))
+#slope1 = scale((coef(fit1)$subjects)$items_calorie)
+coef1_low = coef(fit1_low)$subjects
+coef1_low['subjects'] = row.names(coef1_low)
+pheno_coef1_low = merge(coef1_low, pheno, by = 'subjects')
+pheno_coef1_low$value1_low = scale(scale(pheno_coef1_low$energy)  - scale(pheno_coef1_low$items_calorie.x))
+##################################################################################################################
+eid = numeric(length(unique(X$subjects)))
+slope = numeric(length(unique(X$subjects)))
+energy = numeric(length(unique(X$subjects)))
+#BMI = numeric(length(unique(X$subjects)))
+pb = txtProgressBar(min = 0, max = 10, initial = 0) 
+
+for (i in 1:length(unique(X$subjects))) {
+  X_sub = filter(X, subjects == (unique(X$subjects)[i]))
+  fit_sub = lm(data = X_sub, liking ~ items_calorie)
+  eid[i] = unique(X_sub$subjects)
+  energy[i] = unique(X_sub$energy)
+  slope[i] = coef(fit_sub)[2]
+  setTxtProgressBar(pb,i)
+}
+
+value = scale(scale(energy)  - scale(slope))
+
+cor.test(value, BMI)
+
+eid_high = numeric(length(unique(X$subjects)))
+slope_high = numeric(length(unique(X$subjects)))
+energy_high = numeric(length(unique(X$subjects)))
+pb = txtProgressBar(min = 0, max = 10, initial = 0) 
+
+#Run LR for each subject
+for (i in 1:length(unique(item_high$subjects))) {
+  #Extract each subject's data
+  X_sub_high = filter(item_high, subjects == (unique(item_high$subjects)[i]))
+  #Run LR between liking rating and calories per item
+  fit_sub_high = lm(data = X_sub_high, liking ~ items_calorie)
+  #Get subject ID
+  eid_high[i] = unique(X_sub_high$subjects)
+  #Get subject total calorie intake
+  energy_high[i] = unique(X_sub_high$energy)
+  #Get slopes from LR
+  slope_high[i] = coef(fit_sub_high)[2]
+}
+#Compute H1
+value_high = scale(scale(energy_high)  - scale(slope_high))
+
+subjects = as.character(eid_high)
+value = value_high
+energy = scale(energy_high)
+slope = scale(slope_high)
+X_value = data.frame(subjects, value, energy, slope, stringsAsFactors=FALSE)
+X_value$subjects = as.character(X_value$subjects)
+
+control <- read.csv("demo_all_control.csv")
+control$BMI = scale(control$BMI)
+control$waist_hip_ratio = scale(control$waist_hip_ratio)
+control$age = scale(control$age)
+X_value_control = merge(X_value, control)
+colnames(X_value_control)[2] <- "SCE"
+write.csv(X_value_control, 'temp')
+X_value_control = read.csv('temp')
+
+fit_control1 = lm(data = X_value_control,  waist_hip_ratio ~ sex*(SCE + age + BMI))
+fit_control2 = lm(data = X_value_control,  SCE ~ sex*(waist_hip_ratio + age + BMI))
+fit_control3 = lm(data = X_value_control,  SCE ~ sex*(BMI))
+fit_control4 = lm(data = X_value_control,  SCE ~ sex*(age))
+fit_control5 = lm(data = X_value_control,  SCE ~ sex*(waist_hip_ratio))
+fit_control6 = lm(data = X_value_control,  waist_hip_ratio ~ sex*(SCE))
+fit_control7 = lm(data = X_value_control,  BMI ~ sex*(SCE))
+fit_control8 = lm(data = X_value_control,  SCE ~ sex*(BMI + age))
+fit_control9 = lm(data = X_value_control,  SCE ~ sex*(waist_hip_ratio + age))
+fit_control10 = lm(data = X_value_control,  BMI ~ sex*(SCE + age))
+fit_control11 = lm(data = X_value_control,  energy ~ slope + sex*(waist_hip_ratio + age + BMI))
+
+tab_model(fit_control11)
+
+tab_model(fit_control2)
+save_kable(T1, 'T1.jpg')
+flextable(as.data.frame(T1))
+save_as_docx(T1, path = "T1.docx")
+save_as_image(T1, path = "T1.png")
+print(T1, preview = "docx")
+
+read_docx() %>% 
+  print(target = "T1.docx")
+
+save_kable(fit_control1 %>%
+  tidy() %>%
+  kable(), 'T1.png')
+
+
+X_value_control$sex = as.character(X_value_control$sex)
+
+cor.test(X_value_control$value, X_value_control$BMI)
+
+sex <- read.csv('sex.csv')
+
+Subsample <- function(X) {
+  subjects = numeric(length(unique(X$subjects)))
+  slope = numeric(length(unique(X$subjects)))
+  energy = numeric(length(unique(X$subjects)))
+  BMI = numeric(length(unique(X$subjects)))
+  income = numeric(length(unique(X$subjects)))
+  edu = numeric(length(unique(X$subjects)))
+  pb = txtProgressBar(min = 0, max = 10, initial = 0) 
+  
+  for (i in 1:length(unique(X$subjects))) {
+    X_sub = filter(X, subjects == (unique(X$subjects)[i]))
+    fit_sub = lm(data = X_sub, liking ~ items_calorie)
+    subjects[i] = unique(X_sub$subjects)
+    energy[i] = unique(X_sub$energy)
+    BMI[i] = unique(X_sub$BMI)
+    income[i] = unique(X_sub$income)
+    edu[i] = unique(X_sub$edu)
+    slope[i] = coef(fit_sub)[2]
+    setTxtProgressBar(pb,i)
+  }
+  value = scale(scale(energy)  - scale(slope))
+  X_value = data.frame(subjects, value, energy, BMI, income, edu, stringsAsFactors=FALSE)
+  
+  return(merge(X_value, sex, by = 'subjects'))
+}
+
+X_value_sex = Subsample(X)
+X_m = filter(X_value_sex, sex == 1)
+X_f = filter(X_value_sex, sex == 0)
+
+X_value_sex$edu = as.character(X_value_sex$edu)
+
+summary(lm(value ~ edu, data = X_value_sex))
+
+cor.test(X_value_sex$value, X_value_sex$income)
+cor.test(X_m$value, X_m$BMI)
+cor.test(X_f$value, X_f$BMI)
+
+
+##################################################################################################################
+
+#fit2_high = lmer(data = item_high, consumption ~ items_calorie + (items_calorie | items) + (items_calorie | subjects),  REML = FALSE,
+#                 control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+#fit2_high = lmer(data = item_high, consumption ~ items_calorie + (items_calorie | subjects),  REML = FALSE,
+#                 control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+
+fit2_high = glmer(data = item_high, consumption ~ items_calorie + (items_calorie | subjects), family = binomial (link = "logit"), nAGQ = 0, 
+                 control = glmerControl(optimizer = 'Nelder_Mead'))
+
+coef2_high = coef(fit2_high)$subjects
+coef2_high['subjects'] = row.names(coef2_high)
+coef1_coef2_high = merge(coef1_high, coef2_high, by = 'subjects')
+pheno_coef1_coef2_high = merge(coef1_coef2_high, pheno, by = 'subjects')
+
+pheno_coef1_coef2_high$value2_high = scale(scale(pheno_coef1_coef2_high$items_calorie.x) - scale(pheno_coef1_coef2_high$items_calorie.y))
+
+#fit2_low = lmer(data = item_low, consumption ~ items_calorie + (items_calorie | items) + (items_calorie | subjects),  REML = FALSE, 
+#                control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+#fit2_low = lmer(data = item_low, consumption ~ items_calorie + (items_calorie | subjects),  REML = FALSE,
+#                control=lmerControl(optimizer="optimx", optCtrl=list(method='nlminb')))                
+
+fit2_low = glmer(data = item_low, consumption ~ items_calorie + (items_calorie | subjects), family = binomial (link = "logit"), nAGQ = 0, 
+                 control = glmerControl(optimizer = 'Nelder_Mead'))
+
+coef2_low = coef(fit2_low)$subjects
+coef2_low['subjects'] = row.names(coef2_low)
+coef1_coef2_low = merge(coef1_low, coef2_low, by = 'subjects')
+pheno_coef1_coef2_low = merge(coef1_coef2_low, pheno, by = 'subjects')
+
+pheno_coef1_coef2_low$value2_low = scale(scale(pheno_coef1_coef2_low$items_calorie.y) - scale(pheno_coef1_coef2_low$items_calorie.x))
+
+pheno_value_high = merge(pheno_coef1_high, pheno_coef1_coef2_high, by = 'subjects')
+pheno_value_low = merge(pheno_coef1_low, pheno_coef1_coef2_low, by = 'subjects')
+
+boxplot(BMI~edu,data=pheno, main="Car Milage Data", 
+        xlab="Education level (1 is college degree)", ylab="BMI")
+
+item_high$edu = as.character(item_high$edu)
+item_low$edu = as.character(item_low$edu)
+
+X$edu = as.character(X$edu)
+pheno_coef1_high$edu = as.character(pheno_coef1_high$edu)
+pheno_coef1_low$edu = as.character(pheno_coef1_low$edu)
+pheno_coef1_coef2_high$edu = as.character(pheno_coef1_coef2_high$edu)
+pheno_coef1_coef2_low$edu = as.character(pheno_coef1_coef2_low$edu)
+
+sex <- read.csv('sex.csv')
+pheno_coef1_high = merge(pheno_coef1_high, sex, by = 'subjects')
+pheno_coef1_low = merge(pheno_coef1_low, sex, by = 'subjects')
+pheno_coef1_coef2_high = merge(pheno_coef1_coef2_high, sex, by = 'subjects')
+pheno_coef1_coef2_low = merge(pheno_coef1_coef2_low, sex, by = 'subjects')
+
+pheno_coef1_high_m = filter(pheno_coef1_high, sex == 1)
+pheno_coef1_high_w = filter(pheno_coef1_high, sex == 0)
+pheno_coef1_low_m =filter(pheno_coef1_low, sex == 1)
+pheno_coef1_low_w = filter(pheno_coef1_low, sex == 0)
+pheno_coef1_coef2_high_m = filter(pheno_coef1_coef2_high, sex == 1)
+pheno_coef1_coef2_high_w = filter(pheno_coef1_coef2_high, sex == 0)
+pheno_coef1_coef2_low_m = filter(pheno_coef1_coef2_low, sex == 1)
+pheno_coef1_coef2_low_w = filter(pheno_coef1_coef2_low, sex == 0)
+
+modelX <- lm(BMI ~ edu, data = X)
+model1_high <- lm(value1_high ~ edu, data = pheno_coef1_high)
+model1_low <- lm(value1_low ~ edu, data = pheno_coef1_low)
+model2_high <- lm(value2_high ~ edu, data = pheno_coef1_coef2_high)
+model2_low <- lm(value2_low ~ edu, data = pheno_coef1_coef2_low)
+
+cor.test(pheno_value_high$value1_high, pheno_value_high$value2_high, method = "pearson")
+cor.test(pheno_value_low$value1_low, pheno_value_low$value2_low, method = "pearson")
+
+#cor.test(pheno_coef1_high$value1_high, pheno_coef1_high$energy, method = "pearson")
+#cor.test(pheno_coef1_low$value1_low, pheno_coef1_low$energy, method = "pearson")
+
+#cor.test(pheno_coef1_high$value1_high, pheno_coef1_high$edu, method = "pearson")
+#cor.test(pheno_coef1_low$value1_low, pheno_coef1_low$edu, method = "pearson")
+
+cor.test(pheno_coef1_high$value1_high, pheno_coef1_high$income, method = "pearson")
+cor.test(pheno_coef1_low$value1_low, pheno_coef1_low$income, method = "pearson")
+
+cor.test(pheno_coef1_high_m$value1_high, pheno_coef1_high_m$BMI, method = "pearson")
+cor.test(pheno_coef1_low_m$value1_low, pheno_coef1_low_m$BMI, method = "pearson")
+cor.test(pheno_coef1_high_w$value1_high, pheno_coef1_high_w$BMI, method = "pearson")
+cor.test(pheno_coef1_low_w$value1_low, pheno_coef1_low_w$BMI, method = "pearson")
+
+#cor.test(pheno_coef1_coef2_high$value2_high, pheno_coef1_coef2_high$energy, method = "pearson")
+#cor.test(pheno_coef1_coef2_low$value2_low, pheno_coef1_coef2_low$energy, method = "pearson")
+
+#cor.test(pheno_coef1_coef2_high$value2_high, pheno_coef1_coef2_high$edu, method = "pearson")
+#cor.test(pheno_coef1_coef2_low$value2_low, pheno_coef1_coef2_low$edu, method = "pearson")
+
+cor.test(pheno_coef1_coef2_high$value2_high, pheno_coef1_coef2_high$income, method = "pearson")
+cor.test(pheno_coef1_coef2_low$value2_low, pheno_coef1_coef2_low$income, method = "pearson")
+
+cor.test(pheno_coef1_coef2_high_m$value2_high, pheno_coef1_coef2_high_m$BMI, method = "pearson")
+cor.test(pheno_coef1_coef2_low_m$value2_low, pheno_coef1_coef2_low_m$BMI, method = "pearson")
+cor.test(pheno_coef1_coef2_high_w$value2_high, pheno_coef1_coef2_high_w$BMI, method = "pearson")
+cor.test(pheno_coef1_coef2_low_w$value2_low, pheno_coef1_coef2_low_w$BMI, method = "pearson")
+
+par(mfrow=c(2,2))
+plot(pheno_coef1_high$value1_high, pheno_coef1_high$income, xlab = "Measuement H1", ylab = 'Income')
+plot(pheno_coef1_low$value1_low, pheno_coef1_low$income, xlab = "Measuement L1", ylab = 'Income')
+plot(pheno_coef1_coef2_high$value2_high, pheno_coef1_coef2_high$income, xlab = "Measuement H2", ylab = 'Income')
+plot(pheno_coef1_coef2_low$value2_low, pheno_coef1_coef2_low$income, xlab = "Measuement L2", ylab = 'Income')
+
+par(mfrow=c(2,2))
+plot(pheno_coef1_high_m$value1_high, pheno_coef1_high_m$BMI, xlab = "Measuement H1", ylab = 'BMI')
+plot(pheno_coef1_low_m$value1_low, pheno_coef1_low_m$BMI, xlab = "Measuement L1", ylab = 'BMI')
+plot(pheno_coef1_coef2_high_m$value2_high, pheno_coef1_coef2_high_m$BMI, xlab = "Measuement H2", ylab = 'BMI')
+plot(pheno_coef1_coef2_low_m$value2_low, pheno_coef1_coef2_low_m$BMI, xlab = "Measuement L2", ylab = 'BMI')
+
+par(mfrow=c(2,2))
+plot(pheno_coef1_high_w$value1_high, pheno_coef1_high_w$BMI, xlab = "Measuement H1", ylab = 'BMI')
+plot(pheno_coef1_low_w$value1_low, pheno_coef1_low_w$BMI, xlab = "Measuement L1", ylab = 'BMI')
+plot(pheno_coef1_coef2_high_w$value2_high, pheno_coef1_coef2_high_w$BMI, xlab = "Measuement H2", ylab = 'BMI')
+plot(pheno_coef1_coef2_low_w$value2_low, pheno_coef1_coef2_low_w$BMI, xlab = "Measuement L2", ylab = 'BMI')
+
+################################################################################################################
+
+fit11 = lmer(data = X, liking ~ items_calorie + (items_calorie | items) + (items_calorie | subjects), REML = F)
+coef11 = coef(fit11)$subjects
+coef11['subjects'] = row.names(coef11)
+pheno_coef11 = merge(coef11, pheno, by = 'subjects')
+value11 = scale(scale(pheno_coef11$energy)  - scale(pheno_coef11$items_calorie.x))
+
+fit22 = lmer(data = X, consumption ~ items_calorie + (items_calorie | items) + (items_calorie | subjects), REML = F)
+coef22 = coef(fit22)$subjects
+coef22['subjects'] = row.names(coef22)
+coef11_coef22 = merge(coef11, coef22, by = 'subjects')
+pheno_coef11_coef22 = merge(coef11_coef22, pheno, by = 'subjects')
+value22 = scale(abs(scale(pheno_coef11_coef22$energy) - (scale(pheno_coef11_coef22$items_calorie.y))))
+
+cor(value11, value22)
+
+plot(value11, pheno_coef11$energy)
+plot(value22, pheno_coef11_coef22$energy)
+cor(value11, pheno_coef11$energy)
+cor(value22, pheno_coef11_coef22$energy)
+
+plot(value11, pheno_coef11$edu)
+plot(value22, pheno_coef11_coef22$edu)
+cor(value11, pheno_coef11$edu)
+cor(value22, pheno_coef11_coef22$edu)
+
+plot(value11, pheno_coef11$income)
+plot(value22, pheno_coef11_coef22$income)
+cor(value11, pheno_coef11$income)
+cor(value22, pheno_coef11_coef22$income)
+
+plot(value11, pheno_coef11$BMI)
+plot(value22, pheno_coef11_coef22$BMI)
+cor(value11, pheno_coef11$BMI)
+cor(value22, pheno_coef11_coef22$BMI)
+
+#################################################################################################################
+
+cor.test(value1, value2)
+
+plot(value1, pheno_coef1$energy)
+plot(value2, pheno_coef1_coef2$energy)
+cor(value1, pheno_coef1$energy)
+cor(value2, pheno_coef1_coef2$energy)
+
+plot(value1, pheno_coef1$edu)
+plot(value2, pheno_coef1_coef2$edu)
+cor(value1, pheno_coef1$edu)
+cor(value2, pheno_coef1_coef2$edu)
+
+plot(value1, pheno_coef1$income)
+plot(value2, pheno_coef1_coef2$income)
+cor(value1, pheno_coef1$income)
+cor(value2, pheno_coef1_coef2$income)
+
+plot(value1, pheno_coef1$BMI)
+plot(value2, pheno_coef1_coef2$BMI)
+cor(value1, pheno_coef1$BMI)
+cor(value2, pheno_coef1_coef2$BMI)
+
+cor(value2, energy)
+plot(value1, value2)
+
+X$value1 <- rep(value1, each = 38)
+X$value2 <- rep(value2, each = 38)
+X$value3 <- rep(value3, each = 38)
+sort_X <- X[order(X$items),]
+item_high = sort_X[sort_X$items > 13,]
+item_low = sort_X[sort_X$items <= 13,]
+#item_high$value1 = scale(item_high$value1)
+
+plot(scale(slope1), scale(slope2))
+cor(slope2, slope1)
+
+plot(item_high$value2, item_high$liking, xlab = "Measuement2", ylab = "Liking")
+plot(item_high$value2, item_high$consumption, xlab = "Measuement2", ylab = "Consumption")
+
+plot(sort_X$value2, sort_X$liking, xlab = "Measuement2", ylab = "Liking")
+plot(sort_X$value2, sort_X$consumption, xlab = "Measuement2", ylab = "Consumption")
+
+plot(item_high$value1, item_high$liking,hi xlab = "Measuement1", ylab = 'Liking')
+plot(item_high$value1, item_high$consumption, xlab = "Measuement1", ylab = 'Consumption')
+
+plot(sort_X$value1, sort_X$liking, xlab = "Measuement2", ylab = "Liking")
+plot(sort_X$value1, sort_X$consumption, xlab = "Measuement2", ylab = "Consumption")
+
+plot(item_high$value3, item_high$liking, xlab = "Measuement3", ylab = "Liking")
+plot(item_high$value3, item_high$consumption, xlab = "Measuement3", ylab = "Consumption")
+
+hist(item_high$consumption)
+hist(item_high$liking)
+hist(item_low$liking)
+hist(item_low$consumption)
+
+cor(X$liking, X$consumption, use = "complete.obs")
+
+pp = sort_X$value1
+oo = sort_X$value2
+plot(sort_X$items, oo)
+plot(sort_X$items, sort_X$vlaue2)
+plot(rep(value2, each = 38), X$liking)
+plot(rep(value2, each = 38), X$consumption)
+plot(value2, energy)
+plot(X$liking, X$consumption)
+
+item_high$diff = scale(item_high$liking) - scale(item_high$consumption)
+plot(item_high$value3, item_high$diff, xlab = "Measuement3", ylab = 'Liking - Consumption')
+plot(item_high$value2, item_high$diff, xlab = "Measuement2", ylab = 'Liking - Consumption')
+plot(item_high$value1, item_high$diff, xlab = "Measuement1", ylab = 'Liking - Consumption')
+
+
+
+
+#df <- read.csv('intak_liking_energy.csv', check.names=FALSE)
+intake_liking <- read.csv('intake_liking_overlap.csv', check.names=FALSE)
+
+histPercent <- function(x, ...) {
+  H <- hist(X$consumption, plot = FALSE, breaks = 14)
+  H$density <- with(H, 100 * density* diff(breaks)[1])
+  labs <- paste(format(round(H$density, 3), nsmall = 2), "%", sep="")
+  plot(H, freq = FALSE, labels = labs, ylim=c(0, 70), xlim = c(0, 7), col="gray", xlab="Consumption", main = "")
+}
+histPercent(X$consumption)
+
+histPercent <- function(x, ...) {
+  H <- hist(x, plot = FALSE, breaks = 14)
+  H$density <- with(H, 100 * density* diff(breaks)[1])
+  labs <- paste(format(round(H$density, 3), nsmall = 2), "%", sep="")
+  plot(H, freq = FALSE, labels = labs, ylim=c(0, 1.08*max(H$density)), xlim = c(0, 7) ,col="gray", xlab="Consumption", main = "")
+}
+histPercent(X_10000$consumption)
+histPercent(X_10000$liking)
+histPercent(item_high$consumption)
+histPercent(item_low$consumption)
+
+rcorr(value1, value2)
+cor.test(value1, value2, method = "pearson")
+
+rcorr(value1, pheno_coef1$energy)
+rcorr(value2, pheno_coef1_coef2$energy)
+cor.test(value1, pheno_coef1$energy, method = "pearson")
+cor.test(value2, pheno_coef1_coef2$energy, method = "pearson")
+
+cor(value1, pheno_coef1$edu)
+cor(value2, pheno_coef1_coef2$edu)
+cor.test(value1, pheno_coef1$edu, method = "pearson")
+cor.test(value2, pheno_coef1_coef2$edu, method = "pearson")
+
+cor(value1, pheno_coef1$income)
+cor(value2, pheno_coef1_coef2$income)
+cor.test(value1, pheno_coef1$income, method = "pearson")
+cor.test(value2, pheno_coef1_coef2$income, method = "pearson")
+
+cor.test(pheno_coef1_coef2$energy, pheno_coef1_coef2$BMI)
+cor(value2, pheno_coef1_coef2$BMI)
+cor.test(value1, pheno_coef1$BMI, method = "pearson")
+cor.test(value2, pheno_coef1_coef2$BMI, method = "pearson")
+
+plot(value1, pheno_coef1_coef2$BMI)
+plot(value2, pheno_coef1_coef2$BMI)
+
+cor.test(, pheno_coef1$BMI, method = "pearson")
+
+cor.test(value1, pheno_coef1$BMI, method = "pearson")
+cor.test(value2, pheno_coef1_coef2$BMI, method = "pearson")
+
+item_high_subj = item_high[order(item_high$subjects),]
+item_high_subj_mean = aggregate(item_high_subj[, c(2, 6)], list(item_high_subj$subjects), mean)
+
+item_low_subj = item_low[order(item_low$subjects),]
+item_low_subj_mean = aggregate(item_low_subj[, c(2, 6)], list(item_low_subj$subjects), mean)
+
+cor.test(item_high_subj_mean$liking, item_high_subj_mean$energy, method = "pearson")
+cor.test(item_low_subj_mean$liking, item_low_subj_mean$energy, method = "pearson")
+
+cor.test(item_high_subj_mean$liking, item_high_subj_mean$BMI, method = "pearson")
+cor.test(item_low_subj_mean$liking, item_low_subj_mean$BMI, method = "pearson")
+
+cor.test(item_high$liking, item_high$energy, method = "pearson")
+cor.test(item_low$liking, item_low$energy, method = "pearson")
+
+cor.test(X$liking, X$energy, method = "pearson")
+cor.test(X$liking, X$energy, method = "pearson")
+#######################################################################################################
