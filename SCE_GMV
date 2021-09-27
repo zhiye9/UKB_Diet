@@ -1,0 +1,147 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 27 13:42:14 2021
+
+@author: fly98
+"""
+
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
+import matplotlib
+import seaborn as sns
+from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import KFold
+from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVR
+from sklearn.pipeline import Pipeline
+
+def convstr(input_seq, seperator):
+    return seperator.join(input_seq)
+
+def getIndexes(dfObj, value):
+    ''' Get index positions of value in dataframe i.e. dfObj.'''
+    listOfPos = list()
+    # Get bool dataframe with True at positions where the given value exists
+    result = dfObj.isin([value])
+    # Get list of columns that contains the value
+    seriesObj = result.any()
+    columnNames = list(seriesObj[seriesObj == True].index)
+    # Iterate over list of columns and fetch the rows indexes where value exists
+    for col in columnNames:
+        rows = list(result[col][result[col] == True].index)
+        for row in rows:
+            listOfPos.append((row, col))
+    # Return a list of tuples indicating the positions of value in the dataframe
+    return listOfPos
+
+df = pd.read_csv('ukb44644.csv', encoding = 'unicode_escape')
+
+df_SCE = pd.read_csv('X_value_control.csv', index_col=0)
+df_SCE = df_SCE.rename(columns={"subjects": "eid"})
+df_SCE['eid'] = df_SCE['eid'].astype(str)
+
+gmv = np.genfromtxt('GMV.txt', dtype='str')
+gmv_l = np.char.add(gmv, '-')
+df_gmv = df.filter(regex = convstr(gmv_l, '|'))
+df_gmv['eid'] = df['eid']
+df_gmv_noNAN = df_gmv.dropna(how='all', subset = df_gmv.columns[:-1])
+df_gmv_noNAN.reset_index(drop = True, inplace = True)
+
+for j in range(len(gmv_l)):
+    
+for j in range(5):
+    phe = [col for col in df_gmv_noNAN.columns if gmv_l[j] in col]
+    df_gmv_noNAN[gmv[j]] = 0
+    for i in range(df_gmv_noNAN.shape[0]):
+        df_gmv_noNAN[gmv[j]].loc[i] = np.nanmean(df_gmv_noNAN[phe].loc[i])
+    print(j)
+
+
+df_gmv['eid'] = df['eid']
+df_gmv_noNAN = df_gmv.dropna(how='all', subset = df_gmv.columns[:-1])
+df_gmv_noNAN.reset_index(drop = True, inplace = True)
+
+
+df_gmv_noNAN['eid'] = df_gmv_noNAN['eid'].astype(str)
+df_gmv_SCE = pd.merge(df_gmv_noNAN, df_SCE, on = 'eid')
+df_SCE_gmv_2000 = df_gmv_SCE.sample(n = 2000, random_state = 100)
+
+pca_n = 72
+
+outer_cv = KFold(n_splits = 5, shuffle = True, random_state = 20)
+inner_cv = KFold(n_splits = 5, shuffle = True, random_state = 20)
+par_grid = {'alpha': [1e-2, 1e-1, 1e-8, 1e-4, 1e-6]}
+p_gridsvr = {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
+
+def PCA_CV(pca_n, par_grid, out_fold, in_fold):
+outer_cv = KFold(n_splits = out_fold, shuffle = True, random_state = 20)
+inner_cv = KFold(n_splits = in_fold, shuffle = True, random_state = 20)
+p_grid = par_grid
+
+for j, (train, test) in enumerate(outer_cv.split(df_SCE_gmv_2000, df_SCE_gmv_2000['SCE'])):
+    SCE_train, x_test = df_SCE_gmv_2000.loc[train], 
+    #split dataset to decoding set and test set
+    x_train, x_test = X[train], X[test]
+    y_train, y_test = y[train], y[test]
+    #find optim paramater setting in the inner cv
+    clf =  GridSearchCV(estimator = ElasticNet(tol = 1e-1), param_grid = p_grid, cv = inner_cv, scoring = "r2")
+    clf.fit(x_train, y_train)
+    print(j)
+
+    #predict labels on the test set
+    y_pred = clf.predict(x_train)
+    print(r2_score(y_train, y_pred))
+    #print(y_pred)
+    #calculate metrics
+    r2e.append(r2_score(y_train, y_pred))
+    
+    #predict labels on the test set
+    y_pred = clf.predict(x_test)
+    print(r2_score(y_test, y_pred))
+    #print(y_pred)
+    #calculate metrics
+    r2e.append(r2_score(y_test, y_pred))
+
+
+df_gmv_noNAN_scaled = preprocessing.scale(df_gmvwithSCE[gmv_l])
+pca = PCA(n_components = 'mle')
+pca = PCA(n_components = 72)
+gmv_pca = pca.fit_transform(df_gmv_noNAN_scaled[5:])
+
+
+--------------------------------------------------------------------------------------------------
+
+df_gmvwithSCE = df_gmv_noNAN.loc[df_gmv_noNAN['eid'].isin(df_SCE['eid'])]
+df_SCEwithgmv = df_SCE.loc[df_SCE['eid'].isin(df_gmv_noNAN['eid'])]
+
+df_gmv_noNAN_scaled = preprocessing.scale(df_gmvwithSCE[gmv_l])
+pca = PCA(n_components = 'mle')
+pca = PCA(n_components = 72)
+gmv_pca = pca.fit_transform(df_gmv_noNAN_scaled[5:])
+print(pca.explained_variance_ratio_)
+len(pca.explained_variance_ratio_)
+
+def plotCumSumVariance(var=None):
+    #PLOT FIGURE
+    #You can use plot_color[] to obtain different colors for your plots
+    #Save file
+    cumvar = var.cumsum()
+
+    plt.figure()
+    plt.bar(np.arange(len(var)), cumvar, width = 1.0)
+    plt.axhline(y=0.9, color='r', linestyle='-')
+
+plotCumSumVariance(pca.explained_variance_ratio_)
+
+df_SCE_2000 = df_SCEwithgmv.sample(n = 2000, random_state = 99)
+df_SCE_2000.reset_index(drop = True, inplace = True)
+IC55 = []
+for i in range(0, df_SCE_2000.shape[0]):
+    tem = stats.zscore(np.loadtxt(df_SCE_2000['file'].loc[i]))
+    IC55.append(tem)
+    print("\r Process{}%".format(round((i+1)*100/df_SCE_2000.shape[0])), end="")
