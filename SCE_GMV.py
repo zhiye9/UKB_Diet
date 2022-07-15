@@ -5,6 +5,7 @@ Created on Mon Sep 27 13:42:14 2021
 @author: fly98
 """
 
+from importlib.resources import read_text
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
@@ -24,7 +25,12 @@ import networkx as nx
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from scipy.stats import pearsonr as pearsonr
+import os
+from numpy import loadtxt
 from UKB_graph_metrics import *
+
+os.chdir('/home/ubuntu/UKB/UK_Biobank_diet')
+os.getcwd()
 
 np.set_printoptions(suppress = True)     
 
@@ -667,15 +673,27 @@ fig.tight_layout()
 
 plt.show()
 
-labels = ['Energy_GMV', 'WHR_GMV', 'Energy_ICA', 'WHR_ICA', 'Energy_GMV_ICA', 'WHR_GMV_ICA', 'Energy_GT', 'WHR_GT', 'Energy_GMV_GT', 'WHR_GMV_GT', 'Energy_BMI', 'WHR_BMI', 'Energy_Control', 'WHR_Control']
-dpi = 600
-title = 'Regression results of energy and WHR'
+#labels = ['Energy_GMV', 'WHR_GMV', 'Energy_ICA', 'WHR_ICA', 'Energy_GMV_ICA', 'WHR_GMV_ICA', 'Energy_GT', 'WHR_GT', 'Energy_GMV_GT', 'WHR_GMV_GT', 'Energy_BMI', 'WHR_BMI', 'Energy_Control', 'WHR_Control']
+labels = ['WHR_GMV', 'WHR_ICA', 'WHR_GMV_ICA', 'WHR_GT', 'WHR_GMV_GT', 'WHR_BMI', 'WHR_Control']
+#labels = ['WHR_GMV', 'WHR_ICA', 'WHR_GMV_ICA', 'WHR_GT', 'WHR_GMV_GT']
+dpi = 1600
+title = 'Regression results of WHR'
 
 x = np.arange(len(labels)) 
-train_mean = [np.mean(energy_GMV_train_E), np.mean(GMV_train_WHR), np.mean(energy_IC_train_E), np.mean(IC_train_WHR), np.mean(energy_IC_gmv_train_E), np.mean(IC_gmv_train_E), np.mean(energy_GT_train_E), np.mean(WHR_GT_train_E), np.mean(energy_GT_GMV_train_E), np.mean(WHR_GT_GMV_train_E), np.mean(energy_BMI_train_E), np.mean(WHR_BMI_train_E), np.mean(energy_Control_train_E), np.mean(WHR_Control_train_E)]
-test_mean = [np.mean(energy_GMV_test_E), np.mean(GMV_test_WHR), np.mean(energy_IC_test_E), np.mean(IC_test_WHR), np.mean(energy_IC_gmv_test_E), np.mean(IC_gmv_test_E), np.mean(energy_GT_test_E), np.mean(WHR_GT_test_E), np.mean(energy_GT_GMV_test_E), np.mean(WHR_GT_GMV_test_E), np.mean(energy_BMI_test_E), np.mean(WHR_BMI_test_E), np.mean(energy_Control_test_E), np.mean(WHR_Control_test_E)]
-train_std = [np.std(energy_GMV_train_E), np.std(GMV_train_WHR), np.std(energy_IC_train_E), np.std(IC_train_WHR), np.std(energy_IC_gmv_train_E), np.std(IC_gmv_train_E), np.std(energy_GT_train_E), np.std(WHR_GT_train_E), np.std(energy_GT_GMV_train_E), np.std(WHR_GT_GMV_train_E), np.std(energy_BMI_train_E), np.std(WHR_BMI_train_E), np.std(energy_Control_train_E), np.std(WHR_Control_train_E)]
-test_std = [np.std(energy_GMV_test_E), np.std(GMV_test_WHR), np.std(energy_IC_test_E), np.std(IC_test_WHR), np.std(energy_IC_gmv_test_E), np.std(IC_gmv_test_E), np.std(energy_GT_test_E), np.std(WHR_GT_test_E), np.std(energy_GT_GMV_test_E), np.std(WHR_GT_GMV_test_E), np.std(energy_BMI_test_E), np.std(WHR_BMI_test_E), np.std(energy_Control_test_E), np.std(WHR_Control_test_E)]    
+#train_mean = [np.mean(energy_GMV_train_E), np.mean(GMV_train_WHR), np.mean(energy_IC_train_E), np.mean(IC_train_WHR), np.mean(energy_IC_gmv_train_E), np.mean(IC_gmv_train_E), np.mean(energy_GT_train_E), np.mean(WHR_GT_train_E), np.mean(energy_GT_GMV_train_E), np.mean(WHR_GT_GMV_train_E), np.mean(energy_BMI_train_E), np.mean(WHR_BMI_train_E), np.mean(energy_Control_train_E), np.mean(WHR_Control_train_E)]
+#test_mean = [np.mean(energy_GMV_test_E), np.mean(GMV_test_WHR), np.mean(energy_IC_test_E), np.mean(IC_test_WHR), np.mean(energy_IC_gmv_test_E), np.mean(IC_gmv_test_E), np.mean(energy_GT_test_E), np.mean(WHR_GT_test_E), np.mean(energy_GT_GMV_test_E), np.mean(WHR_GT_GMV_test_E), np.mean(energy_BMI_test_E), np.mean(WHR_BMI_test_E), np.mean(energy_Control_test_E), np.mean(WHR_Control_test_E)]
+#train_std = [np.std(energy_GMV_train_E), np.std(GMV_train_WHR), np.std(energy_IC_train_E), np.std(IC_train_WHR), np.std(energy_IC_gmv_train_E), np.std(IC_gmv_train_E), np.std(energy_GT_train_E), np.std(WHR_GT_train_E), np.std(energy_GT_GMV_train_E), np.std(WHR_GT_GMV_train_E), np.std(energy_BMI_train_E), np.std(WHR_BMI_train_E), np.std(energy_Control_train_E), np.std(WHR_Control_train_E)]
+#test_std = [np.std(energy_GMV_test_E), np.std(GMV_test_WHR), np.std(energy_IC_test_E), np.std(IC_test_WHR), np.std(energy_IC_gmv_test_E), np.std(IC_gmv_test_E), np.std(energy_GT_test_E), np.std(WHR_GT_test_E), np.std(energy_GT_GMV_test_E), np.std(WHR_GT_GMV_test_E), np.std(energy_BMI_test_E), np.std(WHR_BMI_test_E), np.std(energy_Control_test_E), np.std(WHR_Control_test_E)]    
+
+#train_mean = [np.mean(GMV_train_WHR), np.mean(IC_train_WHR), np.mean(IC_gmv_train_E), np.mean(WHR_GT_train_E), np.mean(WHR_GT_GMV_train_E)]
+#test_mean = [np.mean(GMV_test_WHR), np.mean(IC_test_WHR), np.mean(IC_gmv_test_E), np.mean(WHR_GT_test_E), np.mean(WHR_GT_GMV_test_E)]
+#train_std = [np.std(GMV_train_WHR), np.std(IC_train_WHR), np.std(IC_gmv_train_E), np.std(WHR_GT_train_E), np.std(WHR_GT_GMV_train_E)]
+#test_std = [np.std(GMV_test_WHR), np.std(IC_test_WHR), np.std(IC_gmv_test_E), np.std(WHR_GT_test_E), np.std(WHR_GT_GMV_test_E)]    
+
+train_mean = [np.mean(GMV_train_WHR), np.mean(IC_train_WHR), np.mean(IC_gmv_train_E), np.mean(WHR_GT_train_E), np.mean(WHR_GT_GMV_train_E), np.mean(WHR_BMI_train_E), np.mean(WHR_Control_train_E)]
+test_mean = [np.mean(GMV_test_WHR), np.mean(IC_test_WHR), np.mean(IC_gmv_test_E), np.mean(WHR_GT_test_E), np.mean(WHR_GT_GMV_test_E), np.mean(WHR_BMI_test_E), np.mean(WHR_Control_test_E)]
+train_std = [np.std(GMV_train_WHR), np.std(IC_train_WHR), np.std(IC_gmv_train_E), np.std(WHR_GT_train_E), np.std(WHR_GT_GMV_train_E), np.std(WHR_BMI_train_E), np.std(WHR_Control_train_E)]
+test_std = [np.std(GMV_test_WHR), np.std(IC_test_WHR), np.std(IC_gmv_test_E), np.std(WHR_GT_test_E), np.std(WHR_GT_GMV_test_E), np.std(WHR_BMI_test_E), np.std(WHR_Control_test_E)]    
 
 fig, ax = plt.subplots(dpi = dpi)
 
@@ -688,9 +706,10 @@ ax.set_ylabel('R2 Scores')
 ax.set_title(title)
 ax.set_xticks(x)
 ax.set_xticklabels(labels)
-ax.legend()
+ax.legend(bbox_to_anchor=(1, 1))
 plt.xticks(rotation=60)
-plt.yticks(np.linspace(0.0,0.7,0.1))
+plt.yticks(np.arange(0, 0.9, step=0.1))
+#plt.yticks(np.linspace(0.0,0.7,0.1))
 ax.set_xticklabels(labels, fontsize = 9)
 #ax.bar_label(rects1, padding=3)
 #ax.bar_label(rects2, padding=3)
@@ -818,7 +837,7 @@ import nilearn as nl
 import nibabel as nib
 from nilearn.input_data import NiftiMasker
 
-importlib.reload(nilearn)
+#importlib.reload(nilearn)
 from nilearn import plotting
 
 ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
@@ -870,21 +889,25 @@ harvard_oxford.labels
 h_o_sub = nib.load(harvard_oxford_sub.filename)
 h_o_sub.shape
 
+h_o_sub1 = nib.load(harvard_oxford_sub1.filename)
 
 from nilearn.masking import intersect_masks
 from nilearn.image import new_img_like
+import nibabel.processing
 
+'''
 def extract_atlas(file, n):
     GMatlas = nib.load(file)
-    resampled_GM = resample_to_img(GMatlas, nib.load(harvard_oxford_s.filename))
-    data = get_data(resampled_GM)
+    data = get_data(GMatlas)
     data[data != n] = 0
     data[data == n] = 1
-    new_img = new_img_like(resampled_GM, data)
-    return new_img
+    new_img = new_img_like(GMatlas, data)
+    resampled_GM = resample_to_img(new_img, nib.load(harvard_oxford_s.filename))
+    return resampled_GM
+'''
 
 GMatlas = nib.load('GMatlas.nii.gz')
-resampled_GM = resample_to_img(GMatlas, nib.load(harvard_oxford_s.filename))
+resampled_GM = resample_to_img(GMatlas, nib.load(harvard_oxford_sub.filename))
 new_GM_id = [x+1 for x in GM_id]
 data = get_data(resampled_GM)
 data[~np.isin(data, new_GM_id)] = 0
@@ -900,8 +923,9 @@ print(np.count_nonzero(get_data(GM_template_mask)))
  #   data[data == n] = 1
  #   new_img = new_img_like(atlas, data)
  #  return new_img
-    
-d1 = extract_atlas(harvard_oxford_s.filename, 1)
+
+GM = extract_atlas('GMatlas.nii.gz', 1)
+d1 = extract_atlas(harvard_oxford_sub.filename, 1)
 d2 = extract_atlas(harvard_oxford_s.filename, 2)
 cd1 = extract_atlas(harvard_oxford_s.filename, 1)
 cd2 = extract_atlas(harvard_oxford_s.filename, 2)
@@ -960,6 +984,7 @@ beta_GMV_id = pd.merge(beta_GMV_df, gmv_id, on = 'eid')
 beta_GMV_id.to_csv('beta_GMV_id.csv', index = False)
 beta_GMV_id = pd.read_csv('beta_GMV_id.csv')
 beta_GMV_id_nonzero = beta_GMV_id[(beta_GMV_id != 0).all(1)]
+beta_GMV_id_nonzero.reset_index(drop = True, inplace = True)
 beta_GMV_id_nonzero.to_csv('beta_GMV_id_nonzero.csv', index = False)
 beta_GMV_id_nonzero = pd.read_csv('beta_GMV_id_nonzero.csv')
 
@@ -984,7 +1009,7 @@ resampled_GM = resample_to_img(GMatlas, h_o_cort_s)
 resampled_GM1 = resample_to_img(GMatlas, a3)
 
 from numpy import loadtxt
-GM_labels = loadtxt("GMatlas_name.txt", dtype=str, delimiter="\n", unpack=False).tolist()
+GM_labels = loadtxt("GMatlas_name.txt", dtype=str, delimiter="\t", unpack=False).tolist()
 
 GM_id = []
 for i in range(beta_GMV_id_nonzero.shape[0]):
@@ -1034,7 +1059,7 @@ f_withounana.astype()
 result = [x for l in f_withounana for x in l]
 
 ---------------------------------------------------------------------------------------------
-'''temp = [s for s in harvard_oxford_s.labels if ("Superior Temporal Gyrus")  in s]
+temp = [s for s in harvard_oxford_s.labels if ("Superior Temporal Gyrus")  in s]
 harvard_oxford_s.labels.index(temp)
 
 indices = [i for i, elem in enumerate(harvard_oxford_s.labels) if any(a in elem for a in ["Inferior Frontal Gyrus, pars triangularis", "right"])]
@@ -1110,4 +1135,24 @@ f_flatten = ff_nonan.to_numpy().flatten()
 f_withounana = [x for x in f_flatten if str(x) != 'nan']
 result = [x for l in f_withounana for x in l]
 
+--------------------------------------------------------------------------------------------------
+import nilearn.plotting as plotting
+import nilearn as nl
+import nibabel as nib
+from nilearn.input_data import NiftiMasker
+from nilearn.image import get_data
+from numpy import loadtxt
+
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
+fmri_data = get_data(ica100_template)
+good_IC = loadtxt('UKBiobank_BrainImaging_GroupMeanTemplates/rfMRI_GoodComponents_d100_v1.txt', dtype = int)
+good_IC_minus1 = (good_IC -1).tolist()
+fmri_data_new = fmri_data[:,:,:, good_IC_minus1]
+new_fmri_img = new_img_like(ica100_template, fmri_data_new)
+plotting.plot_prob_atlas(new_fmri_img)
+
+
+plotting.plot_roi(ica100_template.slicer[..., n])
+plotting.plot_img(ica100_template.slicer[..., n])
+plotting.plot_prob_atlas(ica100_template)
 
