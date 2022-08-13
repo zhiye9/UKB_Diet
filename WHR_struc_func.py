@@ -92,8 +92,8 @@ def CV(p_grid, out_fold, in_fold, model, X, y, rand, n_beta = False):
         return r2train, r2test, models
 
 #Set parameters of cross-validation
-#par_grid = {'alpha': [1e-2, 1e-1, 1, 1e-3, 0.3]}
-par_grid = {'alpha': [1e-2, 3e-2, 5e-2, 7e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1, 3, 5, 7, 10]}
+par_grid = {'alpha': [1e-2, 1e-1, 1, 1e-3, 0.3]}
+#par_grid = {'alpha': [1e-2, 3e-2, 5e-2, 7e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1, 3, 5, 7, 10]}
 rand = 9
 
 #Read ICA data
