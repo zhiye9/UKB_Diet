@@ -92,7 +92,7 @@ def CV(p_grid, out_fold, in_fold, model, X, y, rand, n_beta = False):
         return r2train, r2test, models
 
 #Set parameters of cross-validation
-par_grid = {'alpha': [1e-2, 1e-1, 1, 1e-3, 0.3]}
+par_grid = {'alpha': [1e-2, 1e-1, 1, 1e-3, 10]}
 #par_grid = {'alpha': [1e-2, 3e-2, 5e-2, 7e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1, 3, 5, 7, 10]}
 rand = 9
 
@@ -239,6 +239,15 @@ def extract_IC(IC, n):
     new_img = new_img_like(IC.slicer[..., n], data)
     return new_img
 
+def extract_IC_withoutprob(file, n):
+    ICatlas = nib.load(file)
+    data = get_data(resampled_GM)
+    data[data != n] = 0
+    data[data == n] = 1
+    new_img = new_img_like(ICatlas, data)
+    return new_img
+
+
 def extract_atlas(file, n):
     GMatlas = nib.load(file)
     resampled_GM = resample_to_img(GMatlas, nib.load(harvard_oxford_s.filename))
@@ -371,7 +380,7 @@ t6 = [extract_IC_color(ica100_template, i - 1, 1.6) for i in GT_id_pos_corr_neg_
 t7 = [extract_IC_color(ica100_template, i - 1, 1.7) for i in GT_id_neg_corr_pos_only]
 t8 = [extract_IC_color(ica100_template, i - 1, 1.8) for i in GT_id_neg_corr_neg_only]
 IC_img = t1 + t2 + t3 + t4 + t5 + t6 + t7 + t8
-#IC_img = t2
+IC_img = t5 + t6 + t7 + t8
 #atlas = image.math_img('np.sum(img, axis = -1)', img = IC_img)
 ##plotting.plot_roi(atlas, cut_coords = [1, -71, 13], cmap = "tab20", colorbar = True)
 #oo = np.unique(atlas.get_data(), return_counts = True)
@@ -393,12 +402,15 @@ last_IC_data_10 = np.multiply(last_IC_data, np.full(last_IC_data.shape, 10))
 last_IC_10 = new_img_like(last_IC, last_IC_data_10)
 
 plotting.plot_roi(last_IC_10, cut_coords = [1, -71, 13], cmap = "Set1", colorbar = True)
+plotting.plot_roi(last_IC_10, cut_coords = [-1, -44, 12], cmap = "Set1", colorbar = True)
+#plotting.plot_roi(last_IC_10, cut_coords = [-1, -44, 12], cmap = "Spectral", colorbar = True)
 np.unique(last_IC_10.get_data(), return_counts = True)
 
 #t1 = extract_IC_color(ica100_template, 1)
 #atlas = image.math_img('np.sum(img, axis=-1)', img=[extract_IC_color(ica100_template, 12, 1.1), extract_IC_color(ica100_template, 9, 1.2)])
 
 #Find intersection of 24 predictive GT
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
 IC_template_mask = []
 for i in range(len(GT_id)):
     IC_template_mask.append(extract_IC(ica100_template, GT_id[i] - 1))
@@ -407,11 +419,22 @@ plotting.plot_roi(new_IC_template_mask, cut_coords = [-1, -44, 12])
 print(np.count_nonzero(get_data(new_IC_template_mask)))
 
 #Compute intersection of predicve GMs and ICs
-GM_IC_template_mask = intersect_masks([new_IC_template_mask, GM_template_mask], threshold = 1)
+GMatlas = nib.load('GMatlas.nii.gz')
+harvard_oxford_s = datasets.fetch_atlas_harvard_oxford('cort-maxprob-thr0-2mm', symmetric_split = True)
+resampled_GM = resample_to_img(GMatlas, nib.load(harvard_oxford_s.filename))
+data = get_data(resampled_GM)
+data[~np.isin(data, new_GM_id)] = int(0)
+data[np.isin(data, new_GM_id)] = int(1)
+GM_template_mask = new_img_like(resampled_GM, data)
+plotting.plot_roi(GM_template_mask, cut_coords = [-1, -44, 12])
+print(np.count_nonzero(get_data(GM_template_mask)))
+
+GM_IC_template_mask = intersect_masks([new_IC_template_mask, GM_template_mask], threshold = 1, connected = False)
 plotting.plot_roi(GM_IC_template_mask, cut_coords = [-1, -44, 12])
 print(np.count_nonzero(get_data(GM_IC_template_mask)))
 
 #Find intersection of 17 positive predictive ICs
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
 IC_template_mask_pos = []
 for i in range(len(GT_id_pos)):
     IC_template_mask_pos.append(extract_IC(ica100_template, GT_id_pos[i] - 1))
@@ -420,6 +443,7 @@ plotting.plot_roi(new_IC_template_mask_pos, cut_coords = [-1, -44, 12])
 print(np.count_nonzero(get_data(new_IC_template_mask_pos)))
 
 #Find intersection of 10 negative predictive ICs
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
 IC_template_mask_neg = []
 for i in range(len(GT_id_neg)):
     IC_template_mask_neg.append(extract_IC(ica100_template, GT_id_neg[i] - 1))
@@ -448,6 +472,7 @@ def avoid_IC_overlap_neg(IC1, IC2, t):
     data[data < t] = np.unique(IC1.get_data())[-1]
     return new_img_like(IC1, data)
 
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
 last_IC_n = t_p_n[0]
 for i in range(len(t_p_n) -1):
     new_IC_overlap = avoid_IC_overlap_neg(last_IC_n, t_p_n[i + 1], -2)
@@ -473,6 +498,8 @@ last_IC_n = t_n_n[0]
 for i in range(len(t_n_n) -1):
     new_IC_overlap = avoid_IC_overlap_neg(last_IC_n, t_n_n[i + 1], -2)
     last_IC_n = new_IC_overlap
+
+ica100_template = nib.load('rfMRI_ICA_d100.nii.gz')
 
 last_IC_p_n = new_img_like(last_IC_p, np.sum([last_IC_p.get_data(), last_IC_n.get_data()], axis = 0))
 plotting.plot_roi(last_IC_p_n, cut_coords = [-1, -44, 12], cmap = "Spectral", colorbar= True)
