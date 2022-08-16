@@ -674,11 +674,11 @@ fig.tight_layout()
 plt.show()
 
 #labels = ['Energy_GMV', 'WHR_GMV', 'Energy_ICA', 'WHR_ICA', 'Energy_GMV_ICA', 'WHR_GMV_ICA', 'Energy_GT', 'WHR_GT', 'Energy_GMV_GT', 'WHR_GMV_GT', 'Energy_BMI', 'WHR_BMI', 'Energy_Control', 'WHR_Control']
-labels = ['WHR~GMV', 'WHR~ICA', 'WHR~GMV+ICA', 'WHR~GT', 'WHR~GMV+GT', 'WHR~BMI', 'WHR~Control']
+#labels = ['WHR~GMV', 'WHR~ICA', 'WHR~GMV+ICA', 'WHR~GT', 'WHR~GMV+GT', 'WHR~BMI', 'WHR~Control']
 #labels = ['WHR_GMV', 'WHR_ICA', 'WHR_GMV_ICA', 'WHR_GT', 'WHR_GMV_GT']
-#labels = ['WHR~GMV', 'WHR~GT']
+labels = ['WHR~GMV', 'WHR~GT']
 dpi = 1600
-title = 'Regression results of WHR without BMI'
+title = 'Regression results of WHR in High self-control subjects'
 
 x = np.arange(len(labels)) 
 #train_mean = [np.mean(energy_GMV_train_E), np.mean(GMV_train_WHR), np.mean(energy_IC_train_E), np.mean(IC_train_WHR), np.mean(energy_IC_gmv_train_E), np.mean(IC_gmv_train_E), np.mean(energy_GT_train_E), np.mean(WHR_GT_train_E), np.mean(energy_GT_GMV_train_E), np.mean(WHR_GT_GMV_train_E), np.mean(energy_BMI_train_E), np.mean(WHR_BMI_train_E), np.mean(energy_Control_train_E), np.mean(WHR_Control_train_E)]
@@ -690,7 +690,7 @@ x = np.arange(len(labels))
 #test_mean = [np.mean(GMV_test_WHR), np.mean(IC_test_WHR), np.mean(IC_gmv_test_E), np.mean(WHR_GT_test_E), np.mean(WHR_GT_GMV_test_E)]
 #train_std = [np.std(GMV_train_WHR), np.std(IC_train_WHR), np.std(IC_gmv_train_E), np.std(WHR_GT_train_E), np.std(WHR_GT_GMV_train_E)]
 #test_std = [np.std(GMV_test_WHR), np.std(IC_test_WHR), np.std(IC_gmv_test_E), np.std(WHR_GT_test_E), np.std(WHR_GT_GMV_test_E)]    
-'''''''''
+
 train_mean = [np.mean(GMV_train_WHR), np.mean(WHR_GT_train_E)]
 test_mean = [np.mean(GMV_test_WHR), np.mean(WHR_GT_test_E)]
 train_std = [np.std(GMV_train_WHR), np.std(WHR_GT_train_E)]
@@ -700,20 +700,21 @@ train_mean = [np.mean(GMV_train_WHR), np.mean(IC_train_WHR), np.mean(IC_gmv_trai
 test_mean = [np.mean(GMV_test_WHR), np.mean(IC_test_WHR), np.mean(IC_gmv_test_E), np.mean(WHR_GT_test_E), np.mean(WHR_GT_GMV_test_E), np.mean(WHR_BMI_test_E), np.mean(WHR_Control_test_E)]
 train_std = [np.std(GMV_train_WHR), np.std(IC_train_WHR), np.std(IC_gmv_train_E), np.std(WHR_GT_train_E), np.std(WHR_GT_GMV_train_E), np.std(WHR_BMI_train_E), np.std(WHR_Control_train_E)]
 test_std = [np.std(GMV_test_WHR), np.std(IC_test_WHR), np.std(IC_gmv_test_E), np.std(WHR_GT_test_E), np.std(WHR_GT_GMV_test_E), np.std(WHR_BMI_test_E), np.std(WHR_Control_test_E)]    
-
+'''''''''
 fig, ax = plt.subplots(dpi = dpi)
 
 width = 0.35
-rects1 = ax.bar(x - width/2, [round(i *100, 0) for i in train_mean], width, yerr = train_std, label='train', align='center', ecolor='black', capsize=2)
-rects2 = ax.bar(x + width/2, [round(i *100, 0) for i in test_mean], width, yerr = test_std, label='test', align='center', ecolor='black', capsize=2)
+rects1 = ax.bar(x - width/2, [round(i *100, 0) for i in train_mean], width, yerr = [i *100 for i in train_std], label='train', align='center', ecolor='black', capsize=2)
+rects2 = ax.bar(x + width/2, [round(i *100, 0) for i in test_mean], width, yerr = [i *100 for i in test_std], label='test', align='center', ecolor='black', capsize=2)
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 ax.set_ylabel('R2 Scores %')
+#ax.set_ylabel('MSR %')
 ax.set_title(title)
 ax.set_xticks(x)
 ax.set_xticklabels(labels)
 ax.legend(bbox_to_anchor=(1.22, 1))
-plt.xticks(rotation=60)
+#plt.xticks(rotation=60)
 plt.yticks(np.arange(0, 85, step=10))
 #plt.yticks(np.linspace(0.0,0.7,0.1))
 ax.set_xticklabels(labels, fontsize = 10)
@@ -727,7 +728,7 @@ ax.bar_label(rects2, padding=3)
     
 fig.tight_layout()
 
-plt.show()                                                                                                                   
+plt.show()          
 
 percent = []
 for i in range(1, df_SCE.shape[0]):
@@ -1158,10 +1159,11 @@ good_IC = loadtxt('UKBiobank_BrainImaging_GroupMeanTemplates/rfMRI_GoodComponent
 good_IC_minus1 = (good_IC -1).tolist()
 fmri_data_new = fmri_data[:,:,:, good_IC_minus1]
 new_fmri_img = new_img_like(ica100_template, fmri_data_new)
-plotting.plot_prob_atlas(new_fmri_img, cut_coords = [0, -41, -13])
-plotting.plot_prob_atlas(fmri_data, cut_coords = [0, -41, -13])
+plotting.plot_prob_atlas(new_fmri_img, cut_coords = [-1, -44, 12], view_type = 'filled_contours')
+plotting.plot_prob_atlas(ica100_template, cut_coords = [-1, -44, 12], view_type = 'filled_contours')
 
-plotting.plot_roi(ica100_template.slicer[..., n])
+n = 45
+plotting.plot_roi(ica100_template.slicer[..., n], cut_coords = [-1, -44, 12])
 plotting.plot_img(ica100_template.slicer[..., n])
 plotting.plot_prob_atlas(ica100_template, cut_coords = [0, -41, -13])
 
