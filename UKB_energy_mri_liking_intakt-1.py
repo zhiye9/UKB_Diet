@@ -774,7 +774,8 @@ df_waist = df[['eid', '48-0.0', '48-1.0', '48-2.0', '48-3.0']]
 df_waist_noNeg = df_waist.mask(df_waist < 0).dropna(subset = df_waist.columns[1:], how = 'all')
 df_waist_noNeg.reset_index(drop = True, inplace = True)
 df_waist_noNeg['eid'] = df_waist_noNeg['eid'].astype(str)
-df_waist_noNeg_noMRI = pd.merge(df_BMI_liking_energy_mri_age_sex, df_waist_noNeg, on = 'eid')
+df_waist_noNeg_noMRI = pd.merge(df_SCE_gmv_2000, df_waist_noNeg, on = 'eid')
+#df_waist_noNeg_noMRI = pd.merge(df_BMI_liking_energy_mri_age_sex, df_waist_noNeg, on = 'eid')
 df_waist_noNeg_noMRI['48'] = 0
 for i in range(df_waist_noNeg_noMRI.shape[0]):
     df_waist_noNeg_noMRI['48'].loc[i] = np.nanmean(df_waist_noNeg_noMRI[df_waist_noNeg.columns[1:]].loc[i])
@@ -794,6 +795,9 @@ for i in range(df_hip_noNeg_noMRI.shape[0]):
    
 df_hipwaist_ecg_BMI_liking_energy_mri_age_sex = df_hip_noNeg_noMRI.drop(columns = df_hip.columns[1:])
 df_hipwaist_ecg_BMI_liking_energy_mri_age_sex['waist_hip_ratio'] = df_hipwaist_ecg_BMI_liking_energy_mri_age_sex['48']/df_hipwaist_ecg_BMI_liking_energy_mri_age_sex['49']
+
+tttt = df_hipwaist_ecg_BMI_liking_energy_mri_age_sex['waist_hip_ratio'][df_hipwaist_ecg_BMI_liking_energy_mri_age_sex['waist_hip_ratio'] == 0.9]
+df_SCE_gmv_2000[df_SCE_gmv_2000['eid'] == '3290038']['waist_hip_ratio']
 
 df_hipwaist_ecg_BMI_liking_energy_mri_age_sex.to_csv('liking_mri_BMI_ECG_control.csv', index = False)
 
