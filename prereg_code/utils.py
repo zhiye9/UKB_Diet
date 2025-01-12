@@ -187,7 +187,7 @@ def CV_pcr(p_grid, out_fold, in_fold, model, X, y, rand, n_preprocess1 = 0,  n_p
 
 def make_artificial_features(X, noise, random_state=None):
     """
-    Generate artificial features with same dimension of the original features using random permutation.
+    Generate artificial features with same dimension of the original features using random permutation [1].
 
     Parameters
     ----------
@@ -204,6 +204,9 @@ def make_artificial_features(X, noise, random_state=None):
     -------
     X_new : array-like, size=(n_samples, n_features + noise)
         The new feature array with the artificial features.
+
+    References:
+    [1] Hédou, Julien, et al. "Discovery of sparse, reliable omic biomarkers with Stabl." Nature Biotechnology (2024): 1-13.
     """
     rng = np.random.default_rng(seed=random_state)
     X_artificial = X.copy()

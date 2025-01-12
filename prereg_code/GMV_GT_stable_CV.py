@@ -77,7 +77,7 @@ print("GT CV started")
 
 for j in range(len(rand_id)):
     random_state = rand_id[j]
-    # Artificial features
+    # Inject ramdom permutation noise
     X_GT_artificial = make_artificial_features(
         X=X_GT,
         noise=n_injected_noise,
