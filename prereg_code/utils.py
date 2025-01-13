@@ -454,6 +454,7 @@ def compute_FDD(beta_df_freq, rand_idx_length, CV_folds, n_beta, method = 'divid
         ax.axvline(optimal_threshold, ls='--', lw=1.5,
                     color="#C41E3A", label=label)
         ax.set_xlabel('Threshold')
+        ax.set_ylabel('FDD')
         ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1))
         ax.grid(which='major', color='#DDDDDD', linewidth=0.8, axis="y")
         ax.spines['top'].set_visible(False)
