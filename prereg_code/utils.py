@@ -447,7 +447,7 @@ def compute_FDD(beta_df_freq, rand_idx_length, CV_folds, n_beta, method = 'divid
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
         ax.plot(threshold_range, FDDs, color="#4D4F53",
-                label='FDR estimate', lw=2)
+                label='FDD estimate', lw=2)
 
         label = f"Optimal threshold={optimal_threshold:.2f}"
 
